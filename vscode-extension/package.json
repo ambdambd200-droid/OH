@@ -1,0 +1,25 @@
+{
+  "name": "oh-openhermes",
+  "displayName": "OH - Open Hermes",
+  "description": "AI agent platform inside VS Code",
+  "version": "0.1.0",
+  "publisher": "ambdambd200-droid",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Chat", "Other"],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "oh.chat", "title": "OH: Chat" },
+      { "command": "oh.models", "title": "OH: List Models" },
+      { "command": "oh.model", "title": "OH: Switch Model" },
+      { "command": "oh.createAgent", "title": "OH: Create Agent" }
+    ],
+    "configuration": {
+      "title": "OH",
+      "properties": {
+        "oh.model": { "type": "string", "default": "meta-llama/llama-4-maverick:free", "description": "Default AI model" }
+      }
+    }
+  }
+}

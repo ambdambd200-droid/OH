@@ -18,6 +18,7 @@ import { listFreeModels, MODELS, getModelsByCategory, searchModels, getModelById
 import type { ModelCategory } from "./proxy/index.js";
 import { startTUI } from "./tui/index.js";
 import { startWebServer } from "./web/index.js";
+
 import { createSession, listSessions, getSession, deleteSession, exportSession, importSession } from "./commands/session.js";
 import { getTemplates, getTemplate, applyTemplate, searchTemplates } from "./commands/templates.js";
 import { showProfile, showLeaderboard, addCommand } from "./game/index.js";
@@ -265,6 +266,43 @@ function main() {
     .command("dashboard", "Launch web dashboard (alias)", () => {}, () => {
       startWebServer();
     })
+    .command("platform", "Launch platform bots", (y) =>
+      y
+        .command("discord <token>", "Start Discord bot", () => {}, async (argv) => {
+          showBanner();
+          trackCommand("platform-discord");
+          console.log(chalk.hex("#06B6D4")("\n  🤖 Starting Discord bot...\n"));
+          try {
+            const { startDiscordBot } = await import("./platforms/discord.js");
+            startDiscordBot(argv.token as string);
+          } catch (e: any) {
+            console.log(chalk.hex("#F43F5E")(`\n  ❌ Failed to start Discord bot: ${e?.message || e}\n`));
+          }
+        })
+        .command("telegram <token>", "Start Telegram bot", () => {}, async (argv) => {
+          showBanner();
+          trackCommand("platform-telegram");
+          console.log(chalk.hex("#06B6D4")("\n  🤖 Starting Telegram bot...\n"));
+          try {
+            const { startTelegramBot } = await import("./platforms/telegram.js");
+            startTelegramBot(argv.token as string);
+          } catch (e: any) {
+            console.log(chalk.hex("#F43F5E")(`\n  ❌ Failed to start Telegram bot: ${e?.message || e}\n`));
+          }
+        })
+        .command("whatsapp", "Start WhatsApp bot", () => {}, async () => {
+          showBanner();
+          trackCommand("platform-whatsapp");
+          console.log(chalk.hex("#06B6D4")("\n  🤖 Starting WhatsApp bot (QR login)...\n"));
+          try {
+            const { startWhatsAppBot } = await import("./platforms/whatsapp.js");
+            startWhatsAppBot();
+          } catch (e: any) {
+            console.log(chalk.hex("#F43F5E")(`\n  ❌ Failed to start WhatsApp bot: ${e?.message || e}\n`));
+          }
+        })
+        .demandCommand(1, "Specify a platform")
+    )
     .command("session", "Session management", (y) =>
       y
         .command("create <name>", "Create a new session", () => {}, (argv) => {

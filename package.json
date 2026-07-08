@@ -11,16 +11,18 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "oh": "tsx src/index.ts",
-"web": "tsx src/index.ts web"
+    "web": "tsx src/index.ts web"
   },
   "dependencies": {
     "@types/blessed": "^0.1.22",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
     "chalk": "^5.4.1",
+    "discord.js": "^14.26.4",
     "express": "^5.2.1",
     "figlet": "^1.8.0",
     "gradient-string": "^3.0.0",
+    "node-telegram-bot-api": "^1.1.2",
     "ws": "^8.21.0",
     "yargs": "^17.7.2",
     "zod": "^3.24.3"

@@ -51,6 +51,14 @@ const sections: HelpSection[] = [
     ],
   },
   {
+    title: "Platforms",
+    commands: [
+      { cmd: "oh platform discord <token>", desc: "Start Discord bot" },
+      { cmd: "oh platform telegram <token>", desc: "Start Telegram bot" },
+      { cmd: "oh platform whatsapp", desc: "Start WhatsApp bot (QR)" },
+    ],
+  },
+  {
     title: "System",
     commands: [
       { cmd: "oh status", desc: "System status" },
