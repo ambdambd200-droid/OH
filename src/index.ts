@@ -14,6 +14,7 @@ import { showStatus } from "./utils/index.js";
 import { askQuestion } from "./utils/index.js";
 import { auditLog } from "./security/index.js";
 import { listFreeModels } from "./proxy/index.js";
+import { startTUI } from "./tui/index.js";
 
 loadConfig();
 setLang(getConfig().lang);
@@ -132,6 +133,12 @@ function main() {
     .command("status", "System status", () => {}, () => {
       showBanner();
       showStatus();
+    })
+    .command("tui", "Launch Terminal User Interface", () => {}, () => {
+      startTUI();
+    })
+    .command("ui", "Launch Terminal User Interface (alias)", () => {}, () => {
+      startTUI();
     })
     .command("help", "Show help", () => {}, () => {
       showBanner();
