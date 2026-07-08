@@ -8,7 +8,7 @@ import { getConfig, setConfig } from "../config/index.js";
 import { getLang, setLang } from "../i18n/index.js";
 import { memoryExport, memorySearch } from "../memory/index.js";
 import { chat } from "../commands/chat.js";
-import { listFreeModels } from "../proxy/index.js";
+import { listFreeModels, MODELS, getModelById } from "../proxy/index.js";
 import { auditLog } from "../security/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,6 +40,16 @@ export function startWebServer(port = 3456) {
       version: "2.0.0",
       uptime: process.uptime(),
     });
+  });
+
+  app.get("/api/models", (_req, res) => {
+    res.json({ models: MODELS, current: getConfig().model });
+  });
+
+  app.get("/api/models/:category", (req, res) => {
+    const cat = req.params.category;
+    const filtered = cat === "all" ? MODELS : MODELS.filter(m => m.category === cat);
+    res.json({ models: filtered, category: cat, total: filtered.length });
   });
 
   app.get("/api/agents", (_req, res) => {

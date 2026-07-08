@@ -43,4 +43,17 @@ export const ar = {
     issues: "مشاكل موجودة",
     cleaned: "تم تنظيف الذاكرة المؤقتة",
   },
+  models: {
+    title: "نماذج الذكاء الاصطناعي",
+    all: "جميع النماذج",
+    chinese: "النماذج الصينية",
+    american: "النماذج الأمريكية",
+    openrouter: "نماذج OpenRouter",
+    total: "نموذج",
+    free: "مجاني",
+    setModel: "اختر موديل: oh config set model <id>",
+    browse: "تصفّح: oh models chinese | american | openrouter | all",
+    search: 'جرّب: oh search-model "<name>"',
+    current: "النموذج الحالي",
+  },
 };

@@ -43,4 +43,17 @@ export const en = {
     issues: "issues found",
     cleaned: "Cache cleaned",
   },
+  models: {
+    title: "AI Models",
+    all: "All Models",
+    chinese: "Chinese Models",
+    american: "American Models",
+    openrouter: "OpenRouter Special",
+    total: "models",
+    free: "free",
+    setModel: "Set model: oh config set model <id>",
+    browse: "Browse: oh models chinese | american | openrouter | all",
+    search: 'Try: oh search-model "<name>"',
+    current: "Current model",
+  },
 };

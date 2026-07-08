@@ -6,10 +6,11 @@ import { Lang } from "../i18n/index.js";
 export interface Config {
   lang: Lang;
   theme: "dark" | "light";
-  provider: "free" | "openai" | "anthropic";
+  provider: "free" | "openai" | "anthropic" | "openrouter";
   model: string;
   dataDir: string;
   debug: boolean;
+  apiKey?: string;
 }
 
 const CONFIG_DIR = join(homedir(), ".oh");
@@ -19,7 +20,7 @@ const defaults: Config = {
   lang: "en",
   theme: "dark",
   provider: "free",
-  model: "gpt-4o-mini",
+  model: "meta-llama/llama-4-maverick:free",
   dataDir: join(CONFIG_DIR, "data"),
   debug: false,
 };

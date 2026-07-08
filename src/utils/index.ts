@@ -1,6 +1,8 @@
 import { createInterface } from "readline";
 import chalk from "chalk";
 import { t, getLang } from "../i18n/index.js";
+import { getConfig } from "../config/index.js";
+import { getModelById } from "../proxy/index.js";
 
 export function askQuestion(prompt: string): Promise<string> {
   const rl = createInterface({
@@ -17,8 +19,11 @@ export function askQuestion(prompt: string): Promise<string> {
 }
 
 export function showStatus(): void {
+  const modelId = getConfig().model;
+  const model = getModelById(modelId);
   console.log(chalk.hex("#10B981")("  🟢 System: Healthy"));
   console.log(chalk.hex("#06B6D4")(`  🌐 Language: ${getLang().toUpperCase()}`));
-  console.log(chalk.hex("#94A3B8")("  💾 Memory: Active"));
+  console.log(chalk.hex("#94A3B8")(`  🧠 Model: ${model?.name || modelId}`));
+  console.log(chalk.hex("#64748B")("  💾 Memory: Active"));
   console.log(chalk.hex("#64748B")("  🔒 Security: Enabled"));
 }

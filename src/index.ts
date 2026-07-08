@@ -14,7 +14,8 @@ import { cmdMemoryStore, cmdMemoryGet, cmdMemorySearch, cmdMemoryClear, cmdMemor
 import { showStatus } from "./utils/index.js";
 import { askQuestion } from "./utils/index.js";
 import { auditLog } from "./security/index.js";
-import { listFreeModels } from "./proxy/index.js";
+import { listFreeModels, MODELS, getModelsByCategory, searchModels, getModelById } from "./proxy/index.js";
+import type { ModelCategory } from "./proxy/index.js";
 import { startTUI } from "./tui/index.js";
 import { startWebServer } from "./web/index.js";
 import { createSession, listSessions, getSession, deleteSession, exportSession, importSession } from "./commands/session.js";
@@ -130,13 +131,123 @@ function main() {
       showBanner();
       console.log(chalk.hex("#10B981")(`  ✅ Language set to: ${lang === "ar" ? "العربية" : "English"}`));
     })
-    .command("models", "List free models", () => {}, () => {
+    .command("model [name]", "Show or switch the active model", (y) =>
+      y.positional("name", { type: "string" })
+    , (argv) => {
       showBanner();
-      console.log(chalk.hex("#8B5CF6").bold("\n  Free Models:\n"));
-      for (const model of listFreeModels()) {
-        console.log(`  ${chalk.hex("#F8FAFC")("•")} ${chalk.hex("#94A3B8")(model)}`);
+      const lang = getLang();
+      if (argv.name) {
+        const model = getModelById(argv.name as string);
+        if (!model) {
+          console.log(chalk.hex("#F43F5E")(`\n  ❌ ${lang === "ar" ? `موديل "${argv.name}" غير موجود` : `Model "${argv.name}" not found`}\n`));
+          return;
+        }
+        setConfig("model", model.id);
+        console.log(chalk.hex("#10B981")(`\n  ✅ ${lang === "ar" ? `تم التبديل إلى ${model.name}` : `Switched to ${model.name}`}\n`));
+        console.log(`  ${chalk.hex("#94A3B8")(model.provider)} | ${chalk.hex("#06B6D4")(model.params || "")} ${chalk.hex("#64748B")(model.context ? `| ${(model.context / 1000).toFixed(0)}K context` : "")}`);
+        console.log(`  ${chalk.hex("#6B7280")(model.description)}`);
+        console.log();
+        return;
       }
-      console.log();
+      const currentId = getConfig().model;
+      const current = getModelById(currentId);
+      if (current) {
+        const catLabel = current.category === "chinese" ? (lang === "ar" ? "صيني" : "Chinese")
+          : current.category === "american" ? (lang === "ar" ? "أمريكي" : "American")
+          : "OpenRouter";
+        console.log(chalk.hex("#8B5CF6").bold(`\n  ${lang === "ar" ? "النموذج الحالي" : "Current Model"}\n`));
+        console.log(`  ${chalk.hex("#10B981")("◉")} ${chalk.hex("#F8FAFC").bold(current.name)}`);
+        console.log(`    ${chalk.hex("#94A3B8")(current.provider)} | ${chalk.hex("#06B6D4")(catLabel)}${current.free ? chalk.hex("#10B981")(" FREE") : ""}`);
+        console.log(`    ${chalk.hex("#64748B")(current.params ? `Parameters: ${current.params}` : "")}${current.paramsActive ? ` (active: ${current.paramsActive})` : ""}`);
+        console.log(`    ${chalk.hex("#64748B")(current.context ? `Context: ${(current.context / 1000).toFixed(0)}K tokens` : "")}`);
+        console.log(`    ${chalk.hex("#6B7280")(current.description)}`);
+        console.log(`    ${chalk.hex("#374151")(`ID: ${current.id}`)}`);
+        console.log();
+        console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "🔀 غيّر الموديل: oh model <id>" : "🔀 Switch: oh model <id>")}`);
+        console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "📋 استعرض: oh models" : "📋 Browse: oh models")}\n`);
+      }
+    })
+    .command("models [category]", "List models (chinese / american / openrouter / all)", (y) =>
+      y.positional("category", { type: "string", choices: ["chinese", "american", "openrouter", "all", "ar", "en"] as const })
+    , (argv) => {
+      showBanner();
+      const cat = argv.category as string | undefined;
+      trackCommand("models");
+      let models = MODELS;
+      if (cat === "chinese") models = getModelsByCategory("chinese");
+      else if (cat === "american") models = getModelsByCategory("american");
+      else if (cat === "openrouter") models = getModelsByCategory("openrouter");
+
+      const lang = getLang();
+      const catLabel = cat
+        ? (cat === "chinese" ? (lang === "ar" ? "صينية" : "Chinese")
+          : cat === "american" ? (lang === "ar" ? "أمريكية" : "American")
+          : cat === "openrouter" ? (lang === "ar" ? "OpenRouter" : "OpenRouter")
+          : lang === "ar" ? "جميع" : "All")
+        : (lang === "ar" ? "جميع" : "All");
+
+      const freeCount = models.filter(m => m.free).length;
+
+      console.log(chalk.hex("#8B5CF6").bold(`\n  ${lang === "ar" ? `🧠 النماذج ${catLabel}` : `🧠 ${catLabel} Models`}    (${models.length} ${lang === "ar" ? "نموذج" : "models"}, ${freeCount} ${lang === "ar" ? "مجاني" : "free"})\n`));
+
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "اختر موديل: oh config set model <id>" : "Set model: oh config set model <id>")}`);
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "تصفّح: oh models chinese | american | openrouter | all" : "Browse: oh models chinese | american | openrouter | all")}\n`);
+
+      const currentModelId = getConfig().model;
+      const grouped = new Map<string, typeof MODELS>();
+      for (const m of models) {
+        const p = grouped.get(m.provider) || [];
+        p.push(m);
+        grouped.set(m.provider, p);
+      }
+
+      for (const [provider, items] of grouped) {
+        console.log(`  ${chalk.hex("#06B6D4").bold(provider)}`);
+        for (const m of items) {
+          const isCurrent = m.id === currentModelId;
+          const marker = isCurrent ? chalk.hex("#10B981")("◉") : chalk.hex("#64748B")("○");
+          const name = isCurrent ? chalk.hex("#10B981").bold(m.name) : chalk.hex("#F8FAFC")(m.name);
+          const freeTag = m.free ? chalk.hex("#10B981")(` ${lang === "ar" ? "مجاناً" : "FREE"}`) : "";
+          const specs = [
+            m.params ? chalk.hex("#64748B")(m.params) : "",
+            m.paramsActive ? chalk.hex("#64748B")(`(active: ${m.paramsActive})`) : "",
+            m.context ? chalk.hex("#64748B")(`${(m.context / 1000).toFixed(0)}K`) : "",
+          ].filter(Boolean).join(" ");
+          console.log(`  ${marker} ${name}${freeTag}`);
+          if (specs) console.log(`    ${chalk.hex("#4B5563")("└")} ${specs}`);
+          console.log(`    ${chalk.hex("#4B5563")("└")} ${chalk.hex("#6B7280")(m.description.slice(0, 100))}`);
+          console.log(`    ${chalk.hex("#4B5563")("└")} ${chalk.hex("#374151")(m.capabilities.join(", "))}`);
+        }
+        console.log();
+      }
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? `💡 جرب: oh search-model "${cat || ""}"` : `💡 Try: oh search-model "<name>"`)}\n`);
+    })
+    .command("search-model <query>", "Search models by name, provider, or keyword", (y) =>
+      y.positional("query", { type: "string", demandOption: true })
+    , (argv) => {
+      showBanner();
+      trackCommand("search-model");
+      const query = argv.query as string;
+      const results = searchModels(query);
+      const lang = getLang();
+      if (results.length === 0) {
+        console.log(chalk.hex("#64748B")(`\n  ${lang === "ar" ? `لا توجد نتائج لـ "${query}"` : `No models found for "${query}"`}\n`));
+        return;
+      }
+      console.log(chalk.hex("#8B5CF6").bold(`\n  ${lang === "ar" ? `نتائج البحث عن "${query}"` : `Search results for "${query}"`} (${results.length})\n`));
+      for (const m of results) {
+        const catLabel = m.category === "chinese" ? (lang === "ar" ? "صيني" : "Chinese")
+          : m.category === "american" ? (lang === "ar" ? "أمريكي" : "American")
+          : "OpenRouter";
+        const freeTag = m.free ? chalk.hex("#10B981")(` ${lang === "ar" ? "مجاناً" : "FREE"}`) : "";
+        console.log(`  ${chalk.hex("#F8FAFC").bold(m.name)}${freeTag}`);
+        console.log(`    ${chalk.hex("#94A3B8")(m.provider)} | ${chalk.hex("#06B6D4")(catLabel)}`);
+        if (m.params) console.log(`    ${chalk.hex("#64748B")(m.params)}${m.paramsActive ? ` (active: ${m.paramsActive})` : ""}`);
+        console.log(`    ${chalk.hex("#6B7280")(m.description)}`);
+        console.log(`    ${chalk.hex("#374151")(`ID: ${m.id}`)}`);
+        console.log();
+      }
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? `💡 استخدم: oh config set model ${results[0]?.id || "<id>"}` : `💡 Set it: oh config set model ${results[0]?.id || "<id>"}`)}\n`);
     })
     .command("status", "System status", () => {}, () => {
       showBanner();
@@ -293,6 +404,44 @@ async function interactiveMode() {
     }
     if (input.toLowerCase() === "stats") {
       console.log(getStatsSummary());
+      continue;
+    }
+    if (input.toLowerCase() === "models" || input === "نماذج") {
+      const ll = getLang();
+      console.log(chalk.hex("#8B5CF6").bold(`\n  🧠 ${ll === "ar" ? "النماذج المتاحة" : "Available Models"} (${MODELS.length}, ${MODELS.filter(m => m.free).length} ${ll === "ar" ? "مجاني" : "free"})\n`));
+      for (const m of MODELS) {
+        const isCurrent = m.id === getConfig().model;
+        const marker = isCurrent ? chalk.hex("#10B981")("◉") : chalk.hex("#64748B")("○");
+        const name = isCurrent ? chalk.hex("#10B981").bold(m.name) : chalk.hex("#F8FAFC")(m.name);
+        const flag = m.category === "chinese" ? "🇨🇳" : m.category === "american" ? "🇺🇸" : "🔷";
+        console.log(`  ${marker} ${flag} ${name}${m.free ? chalk.hex("#10B981")(" FREE") : ""}`);
+        console.log(`    ${chalk.hex("#6B7280")(m.description.slice(0, 80))}`);
+      }
+      console.log(`  ${chalk.hex("#64748B")(ll === "ar" ? "💡 غيّر: model <id>" : "💡 Switch: model <id>")}`);
+      console.log();
+      continue;
+    }
+    if (input.toLowerCase() === "model" || input === "موديل") {
+      const currentId = getConfig().model;
+      const current = getModelById(currentId);
+      const ll = getLang();
+      if (current) {
+        console.log(chalk.hex("#10B981")(`\n  🧠 ${ll === "ar" ? "النموذج الحالي:" : "Current model:"} ${chalk.bold(current.name)}`));
+        console.log(`  ${chalk.hex("#94A3B8")(`${current.provider} | ${current.params || ""} | ${current.context ? `${(current.context / 1000).toFixed(0)}K` : ""}`)}`);
+        console.log();
+      }
+      continue;
+    }
+    if (input.toLowerCase().startsWith("model ") || input.startsWith("موديل ")) {
+      const name = input.startsWith("موديل ") ? input.slice(5).trim() : input.slice(6).trim();
+      const ll = getLang();
+      const found = getModelById(name);
+      if (found) {
+        setConfig("model", found.id);
+        console.log(chalk.hex("#10B981")(`\n  ✅ ${ll === "ar" ? `تم التبديل إلى ${found.name}` : `Switched to ${found.name}`}\n`));
+      } else {
+        console.log(chalk.hex("#F43F5E")(`\n  ❌ ${ll === "ar" ? "موديل غير موجود" : "Model not found"}\n`));
+      }
       continue;
     }
     if (input.toLowerCase() === "doctor") {
