@@ -46,7 +46,11 @@ const sections: HelpSection[] = [
     title: t().help.system,
     commands: [
       { cmd: "oh status", desc: "System status" },
+      { cmd: "oh stats", desc: "Usage statistics" },
+      { cmd: "oh search <query>", desc: "Search everything" },
+      { cmd: "oh system info", desc: "System information" },
       { cmd: "oh doctor", desc: "Run diagnostics" },
+      { cmd: "oh clean", desc: "Clean cache" },
       { cmd: "oh version", desc: "Show version" },
       { cmd: "oh update", desc: "Check for updates" },
     ],

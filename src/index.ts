@@ -3,6 +3,7 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import chalk from "chalk";
+import { readFileSync } from "fs";
 import { showBanner } from "./cli/banner.js";
 import { showHelp } from "./cli/help.js";
 import { loadConfig, saveConfig, getConfig, setConfig } from "./config/index.js";
@@ -15,6 +16,13 @@ import { askQuestion } from "./utils/index.js";
 import { auditLog } from "./security/index.js";
 import { listFreeModels } from "./proxy/index.js";
 import { startTUI } from "./tui/index.js";
+import { startWebServer } from "./web/index.js";
+import { createSession, listSessions, getSession, deleteSession, exportSession, importSession } from "./commands/session.js";
+import { getTemplates, getTemplate, applyTemplate, searchTemplates } from "./commands/templates.js";
+import { showProfile, showLeaderboard, addCommand } from "./game/index.js";
+import { getStatsSummary, trackCommand } from "./commands/stats.js";
+import { cmdSearch } from "./commands/search.js";
+import { systemInfo, checkUpdate, cleanCache, exportAll, doctor } from "./commands/system.js";
 
 loadConfig();
 setLang(getConfig().lang);
@@ -140,6 +148,120 @@ function main() {
     .command("ui", "Launch Terminal User Interface (alias)", () => {}, () => {
       startTUI();
     })
+    .command("web", "Launch web dashboard", () => {}, () => {
+      startWebServer();
+    })
+    .command("dashboard", "Launch web dashboard (alias)", () => {}, () => {
+      startWebServer();
+    })
+    .command("session", "Session management", (y) =>
+      y
+        .command("create <name>", "Create a new session", () => {}, (argv) => {
+          showBanner();
+          createSession(argv.name as string);
+        })
+        .command("list", "List all sessions", () => {}, () => {
+          showBanner();
+          listSessions();
+        })
+        .command("export <id>", "Export session as JSON", () => {}, (argv) => {
+          showBanner();
+          exportSession(argv.id as string);
+        })
+        .command("import <file>", "Import session from JSON", () => {}, (argv) => {
+          showBanner();
+          const json = readFileSync(argv.file as string, "utf-8");
+          importSession(json);
+        })
+        .command("delete <id>", "Delete a session", () => {}, (argv) => {
+          showBanner();
+          deleteSession(argv.id as string);
+        })
+        .demandCommand(1, "Specify a session subcommand")
+    )
+    .command("templates", "Agent templates", (y) =>
+      y
+        .command("$0", "List all templates", () => {}, () => {
+          showBanner();
+          const templates = getTemplates();
+          console.log(chalk.hex("#8B5CF6").bold("\n  Agent Templates:\n"));
+          for (const t of templates) {
+            console.log(`  ${t.icon} ${chalk.hex("#F8FAFC").bold(t.name)}`);
+            console.log(`    ${chalk.hex("#94A3B8")(t.description)}`);
+            console.log(`    ${chalk.hex("#64748B")(`ID: ${t.id} | ${t.category}`)}`);
+            console.log();
+          }
+        })
+        .command("search <query>", "Search templates", () => {}, (argv) => {
+          showBanner();
+          const results = searchTemplates(argv.query as string);
+          if (results.length === 0) {
+            console.log(chalk.hex("#64748B")("  No templates found"));
+            return;
+          }
+          console.log(chalk.hex("#8B5CF6").bold(`\n  Templates matching "${argv.query}":\n`));
+          for (const t of results) {
+            console.log(`  ${t.icon} ${chalk.hex("#F8FAFC").bold(t.name)}`);
+            console.log(`    ${chalk.hex("#64748B")(`ID: ${t.id} | ${t.category}`)}`);
+            console.log();
+          }
+        })
+        .command("apply <id> <name>", "Create agent from template", () => {}, (argv) => {
+          showBanner();
+          applyTemplate(argv.id as string, argv.name as string);
+        })
+        .demandCommand(0, "")
+    )
+    .command("profile", "Show your gamification profile", () => {}, () => {
+      showBanner();
+      showProfile();
+    })
+    .command("leaderboard", "Show leaderboard", () => {}, () => {
+      showBanner();
+      showLeaderboard();
+    })
+    .command("stats", "Show usage statistics", () => {}, () => {
+      showBanner();
+      trackCommand("stats");
+      console.log(getStatsSummary());
+    })
+    .command("search <query>", "Search everything (memory, agents, templates)", (y) =>
+      y.positional("query", { type: "string", demandOption: true })
+    , (argv) => {
+      showBanner();
+      trackCommand("search");
+      cmdSearch(argv.query as string);
+    })
+    .command("system", "System commands", (y) =>
+      y
+        .command("info", "Show system information", () => {}, () => {
+          showBanner();
+          trackCommand("system-info");
+          console.log(systemInfo());
+        })
+        .demandCommand(1, "Specify a system subcommand")
+    )
+    .command("doctor", "Run diagnostics", () => {}, () => {
+      showBanner();
+      trackCommand("doctor");
+      const result = doctor();
+      if (result.healthy) {
+        console.log(chalk.hex("#10B981")("\n  ✅ All systems healthy\n"));
+      } else {
+        console.log(chalk.hex("#F43F5E")(`\n  ❌ Found ${result.issues.length} issue(s):\n`));
+        for (const issue of result.issues) {
+          console.log(`  ${chalk.hex("#F43F5E")("•")} ${chalk.hex("#94A3B8")(issue)}`);
+        }
+        console.log();
+      }
+    })
+    .command("clean", "Clean cache", () => {}, () => {
+      showBanner();
+      trackCommand("clean");
+      const bytes = cleanCache();
+      const mb = (bytes / 1024 / 1024).toFixed(2);
+      console.log(chalk.hex("#10B981")(`\n  ✅ Cleaned ${mb} MB\n`));
+    })
     .command("help", "Show help", () => {}, () => {
       showBanner();
       showHelp();
@@ -167,6 +289,34 @@ async function interactiveMode() {
     }
     if (input.toLowerCase() === "status") {
       showStatus();
+      continue;
+    }
+    if (input.toLowerCase() === "stats") {
+      console.log(getStatsSummary());
+      continue;
+    }
+    if (input.toLowerCase() === "doctor") {
+      const result = doctor();
+      if (result.healthy) {
+        console.log(chalk.hex("#10B981")("\n  ✅ All systems healthy\n"));
+      } else {
+        console.log(chalk.hex("#F43F5E")(`\n  ❌ Found ${result.issues.length} issue(s):\n`));
+        for (const issue of result.issues) {
+          console.log(`  ${chalk.hex("#F43F5E")("•")} ${chalk.hex("#94A3B8")(issue)}`);
+        }
+        console.log();
+      }
+      continue;
+    }
+    if (input.toLowerCase() === "clean") {
+      const bytes = cleanCache();
+      const mb = (bytes / 1024 / 1024).toFixed(2);
+      console.log(chalk.hex("#10B981")(`\n  ✅ Cleaned ${mb} MB\n`));
+      continue;
+    }
+    if (input.toLowerCase().startsWith("search ")) {
+      const query = input.slice(7);
+      cmdSearch(query);
       continue;
     }
     auditLog("INTERACTIVE", input.slice(0, 200));

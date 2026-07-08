@@ -2,6 +2,7 @@ import chalk from "chalk";
 import { t } from "../i18n/index.js";
 import { memoryStore, memoryGet, memorySearch } from "../memory/index.js";
 import { auditLog } from "../security/index.js";
+import { trackCommand } from "./stats.js";
 
 interface Agent {
   name: string;
@@ -27,6 +28,7 @@ export function createAgent(name: string, description: string, model = "gpt-4o-m
   });
   memoryStore(`agent:${name}`, JSON.stringify({ description, model }));
   auditLog("AGENT_CREATE", `Created agent: ${name}`);
+  trackCommand("create");
   console.log(chalk.hex("#10B981")(`  ✅ ${t().agent.created}: ${chalk.bold(name)}`));
 }
 

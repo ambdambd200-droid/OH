@@ -23,4 +23,24 @@ export const en = {
     retrieved: "Memory retrieved",
     cleared: "Memory cleared",
   },
+  stats: {
+    title: "Usage Statistics",
+    commands: "Commands",
+    chats: "Chats",
+    agents: "Agents",
+    memory: "Memory entries",
+    tokens: "Tokens",
+    uptime: "Uptime",
+    today: "Today",
+  },
+  search: {
+    title: "Search Results",
+    noResults: "No results found",
+  },
+  system: {
+    title: "System Information",
+    healthy: "All systems healthy",
+    issues: "issues found",
+    cleaned: "Cache cleaned",
+  },
 };

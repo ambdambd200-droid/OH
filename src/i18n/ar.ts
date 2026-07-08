@@ -23,4 +23,24 @@ export const ar = {
     retrieved: "تم استرجاع الذاكرة",
     cleared: "تم مسح الذاكرة",
   },
+  stats: {
+    title: "إحصائيات الاستخدام",
+    commands: "الأوامر",
+    chats: "المحادثات",
+    agents: "الوكلاء",
+    memory: "مدخلات الذاكرة",
+    tokens: "التوكنات",
+    uptime: "وقت التشغيل",
+    today: "اليوم",
+  },
+  search: {
+    title: "نتائج البحث",
+    noResults: "لا توجد نتائج",
+  },
+  system: {
+    title: "معلومات النظام",
+    healthy: "جميع الأنظمة سليمة",
+    issues: "مشاكل موجودة",
+    cleaned: "تم تنظيف الذاكرة المؤقتة",
+  },
 };
