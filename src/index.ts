@@ -40,6 +40,7 @@ function main() {
       () => {},
       async () => {
         showBanner();
+        console.log(chalk.hex("#A78BFA")(`  ${t().welcome}`));
         await interactiveMode();
       }
     )
@@ -99,25 +100,25 @@ function main() {
       y
         .command("set <key> <value>", "Set config", () => {}, (argv) => {
           setConfig(argv.key as any, argv.value as any);
-          console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#94A3B8")(`${argv.key} = ${argv.value}`)}`);
+          console.log(chalk.hex("#10B981")(`  ✅ Config set: ${argv.key} = ${argv.value}`));
         })
         .command("get [key]", "Get config", () => {}, (argv) => {
           const cfg = getConfig();
           if (argv.key) {
-            console.log(`  ${chalk.hex("#06B6D4")(`${argv.key}: ${(cfg as any)[argv.key as string]}`)}`);
+            console.log(chalk.hex("#06B6D4")(`  ${argv.key}: ${(cfg as any)[argv.key as string]}`));
           } else {
-            console.log(`  ${chalk.hex("#8B5CF6").bold("Configuration")}`);
+            console.log(chalk.hex("#8B5CF6").bold("\n  Config:\n"));
             for (const [k, v] of Object.entries(cfg)) {
-              console.log(`    ${chalk.hex("#F8FAFC")(k)}  ${chalk.hex("#64748B")(v)}`);
+              console.log(`  ${chalk.hex("#F8FAFC").bold(k)}: ${chalk.hex("#94A3B8")(v)}`);
             }
             console.log();
           }
         })
         .command("list", "List all config", () => {}, () => {
           const cfg = getConfig();
-          console.log(`  ${chalk.hex("#8B5CF6").bold("Configuration")}`);
+          console.log(chalk.hex("#8B5CF6").bold("\n  Config:\n"));
           for (const [k, v] of Object.entries(cfg)) {
-            console.log(`    ${chalk.hex("#F8FAFC")(k)}  ${chalk.hex("#64748B")(v)}`);
+            console.log(`  ${chalk.hex("#F8FAFC").bold(k)}: ${chalk.hex("#94A3B8")(v)}`);
           }
           console.log();
         })
@@ -130,8 +131,7 @@ function main() {
       setLang(lang);
       setConfig("lang", lang);
       showBanner();
-      console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#94A3B8")(lang === "ar" ? "اللغة: العربية" : "Language: English")}`);
-      console.log();
+      console.log(chalk.hex("#10B981")(`  ✅ Language set to: ${lang === "ar" ? "العربية" : "English"}`));
     })
     .command("model [name]", "Show or switch the active model", (y) =>
       y.positional("name", { type: "string" })
@@ -141,13 +141,13 @@ function main() {
       if (argv.name) {
         const model = getModelById(argv.name as string);
         if (!model) {
-          console.log(`  ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(lang === "ar" ? `الموديل "${argv.name}" غير موجود` : `Model "${argv.name}" not found`)}`);
-          console.log();
+          console.log(chalk.hex("#F43F5E")(`\n  ❌ ${lang === "ar" ? `موديل "${argv.name}" غير موجود` : `Model "${argv.name}" not found`}\n`));
           return;
         }
         setConfig("model", model.id);
-        console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#F8FAFC")(model.name)}`);
-        console.log(`    ${chalk.hex("#64748B")(model.description)}`);
+        console.log(chalk.hex("#10B981")(`\n  ✅ ${lang === "ar" ? `تم التبديل إلى ${model.name}` : `Switched to ${model.name}`}\n`));
+        console.log(`  ${chalk.hex("#94A3B8")(model.provider)} | ${chalk.hex("#06B6D4")(model.params || "")} ${chalk.hex("#64748B")(model.context ? `| ${(model.context / 1000).toFixed(0)}K context` : "")}`);
+        console.log(`  ${chalk.hex("#6B7280")(model.description)}`);
         console.log();
         return;
       }
@@ -157,14 +157,16 @@ function main() {
         const catLabel = current.category === "chinese" ? (lang === "ar" ? "صيني" : "Chinese")
           : current.category === "american" ? (lang === "ar" ? "أمريكي" : "American")
           : "OpenRouter";
-        console.log(`  ${chalk.hex("#8B5CF6").bold("Current Model")}`);
-        console.log(`    ${chalk.hex("#10B981")("●")} ${chalk.hex("#F8FAFC").bold(current.name)}`);
-        console.log(`      ${chalk.hex("#64748B")(current.provider)}  ${chalk.hex("#06B6D4")(catLabel)}${current.free ? chalk.hex("#10B981")(" free") : ""}`);
-        console.log(`      ${chalk.hex("#64748B")(current.params ? `params: ${current.params}` : "")}${current.context ? `  context: ${(current.context / 1000).toFixed(0)}K` : ""}`);
-        console.log(`      ${chalk.hex("#4B5563")(`id: ${current.id}`)}`);
+        console.log(chalk.hex("#8B5CF6").bold(`\n  ${lang === "ar" ? "النموذج الحالي" : "Current Model"}\n`));
+        console.log(`  ${chalk.hex("#10B981")("◉")} ${chalk.hex("#F8FAFC").bold(current.name)}`);
+        console.log(`    ${chalk.hex("#94A3B8")(current.provider)} | ${chalk.hex("#06B6D4")(catLabel)}${current.free ? chalk.hex("#10B981")(" FREE") : ""}`);
+        console.log(`    ${chalk.hex("#64748B")(current.params ? `Parameters: ${current.params}` : "")}${current.paramsActive ? ` (active: ${current.paramsActive})` : ""}`);
+        console.log(`    ${chalk.hex("#64748B")(current.context ? `Context: ${(current.context / 1000).toFixed(0)}K tokens` : "")}`);
+        console.log(`    ${chalk.hex("#6B7280")(current.description)}`);
+        console.log(`    ${chalk.hex("#374151")(`ID: ${current.id}`)}`);
         console.log();
-        console.log(`  ${chalk.hex("#64748B")(`${lang === "ar" ? "غيّر الموديل" : "Switch model"}: oh model <id>`)}`);
-        console.log();
+        console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "🔀 غيّر الموديل: oh model <id>" : "🔀 Switch: oh model <id>")}`);
+        console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "📋 استعرض: oh models" : "📋 Browse: oh models")}\n`);
       }
     })
     .command("models [category]", "List models (chinese / american / openrouter / all)", (y) =>
@@ -188,8 +190,10 @@ function main() {
 
       const freeCount = models.filter(m => m.free).length;
 
-      console.log(`  ${chalk.hex("#8B5CF6").bold(`${catLabel} Models`)}  ${chalk.hex("#64748B")(`(${models.length} total, ${freeCount} free)`)}`);
-      console.log();
+      console.log(chalk.hex("#8B5CF6").bold(`\n  ${lang === "ar" ? `🧠 النماذج ${catLabel}` : `🧠 ${catLabel} Models`}    (${models.length} ${lang === "ar" ? "نموذج" : "models"}, ${freeCount} ${lang === "ar" ? "مجاني" : "free"})\n`));
+
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "اختر موديل: oh config set model <id>" : "Set model: oh config set model <id>")}`);
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? "تصفّح: oh models chinese | american | openrouter | all" : "Browse: oh models chinese | american | openrouter | all")}\n`);
 
       const currentModelId = getConfig().model;
       const grouped = new Map<string, typeof MODELS>();
@@ -203,22 +207,22 @@ function main() {
         console.log(`  ${chalk.hex("#06B6D4").bold(provider)}`);
         for (const m of items) {
           const isCurrent = m.id === currentModelId;
-          const marker = isCurrent ? chalk.hex("#10B981")("●") : chalk.hex("#4B5563")("○");
+          const marker = isCurrent ? chalk.hex("#10B981")("◉") : chalk.hex("#64748B")("○");
           const name = isCurrent ? chalk.hex("#10B981").bold(m.name) : chalk.hex("#F8FAFC")(m.name);
-          const freeTag = m.free ? chalk.hex("#10B981")(" free") : "";
+          const freeTag = m.free ? chalk.hex("#10B981")(` ${lang === "ar" ? "مجاناً" : "FREE"}`) : "";
           const specs = [
             m.params ? chalk.hex("#64748B")(m.params) : "",
-            m.paramsActive ? chalk.hex("#64748B")(`active: ${m.paramsActive}`) : "",
+            m.paramsActive ? chalk.hex("#64748B")(`(active: ${m.paramsActive})`) : "",
             m.context ? chalk.hex("#64748B")(`${(m.context / 1000).toFixed(0)}K`) : "",
-          ].filter(Boolean).join("  ");
+          ].filter(Boolean).join(" ");
           console.log(`  ${marker} ${name}${freeTag}`);
-          if (specs) console.log(`      ${specs}`);
-          console.log(`      ${chalk.hex("#4B5563")(m.description.slice(0, 100))}`);
+          if (specs) console.log(`    ${chalk.hex("#4B5563")("└")} ${specs}`);
+          console.log(`    ${chalk.hex("#4B5563")("└")} ${chalk.hex("#6B7280")(m.description.slice(0, 100))}`);
+          console.log(`    ${chalk.hex("#4B5563")("└")} ${chalk.hex("#374151")(m.capabilities.join(", "))}`);
         }
         console.log();
       }
-      console.log(`  ${chalk.hex("#64748B")(`Search: oh search-model "<query>"`)}`);
-      console.log();
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? `💡 جرب: oh search-model "${cat || ""}"` : `💡 Try: oh search-model "<name>"`)}\n`);
     })
     .command("search-model <query>", "Search models by name, provider, or keyword", (y) =>
       y.positional("query", { type: "string", demandOption: true })
@@ -229,26 +233,23 @@ function main() {
       const results = searchModels(query);
       const lang = getLang();
       if (results.length === 0) {
-        console.log(`  ${chalk.hex("#64748B")(`No results for "${query}"`)}`);
-        console.log();
+        console.log(chalk.hex("#64748B")(`\n  ${lang === "ar" ? `لا توجد نتائج لـ "${query}"` : `No models found for "${query}"`}\n`));
         return;
       }
-      console.log(`  ${chalk.hex("#8B5CF6").bold(`"${query}"`)}  ${chalk.hex("#64748B")(`${results.length} results`)}`);
-      console.log();
+      console.log(chalk.hex("#8B5CF6").bold(`\n  ${lang === "ar" ? `نتائج البحث عن "${query}"` : `Search results for "${query}"`} (${results.length})\n`));
       for (const m of results) {
         const catLabel = m.category === "chinese" ? (lang === "ar" ? "صيني" : "Chinese")
           : m.category === "american" ? (lang === "ar" ? "أمريكي" : "American")
           : "OpenRouter";
-        const freeTag = m.free ? chalk.hex("#10B981")(" free") : "";
+        const freeTag = m.free ? chalk.hex("#10B981")(` ${lang === "ar" ? "مجاناً" : "FREE"}`) : "";
         console.log(`  ${chalk.hex("#F8FAFC").bold(m.name)}${freeTag}`);
-        console.log(`    ${chalk.hex("#64748B")(m.provider)}  ${chalk.hex("#06B6D4")(catLabel)}`);
+        console.log(`    ${chalk.hex("#94A3B8")(m.provider)} | ${chalk.hex("#06B6D4")(catLabel)}`);
         if (m.params) console.log(`    ${chalk.hex("#64748B")(m.params)}${m.paramsActive ? ` (active: ${m.paramsActive})` : ""}`);
-        console.log(`    ${chalk.hex("#4B5563")(m.description)}`);
-        console.log(`    ${chalk.hex("#374151")(`id: ${m.id}`)}`);
+        console.log(`    ${chalk.hex("#6B7280")(m.description)}`);
+        console.log(`    ${chalk.hex("#374151")(`ID: ${m.id}`)}`);
         console.log();
       }
-      console.log(`  ${chalk.hex("#64748B")(`Set it: oh model ${results[0]?.id || "<id>"}`)}`);
-      console.log();
+      console.log(`  ${chalk.hex("#64748B")(lang === "ar" ? `💡 استخدم: oh config set model ${results[0]?.id || "<id>"}` : `💡 Set it: oh config set model ${results[0]?.id || "<id>"}`)}\n`);
     })
     .command("status", "System status", () => {}, () => {
       showBanner();
@@ -271,34 +272,34 @@ function main() {
         .command("discord <token>", "Start Discord bot", () => {}, async (argv) => {
           showBanner();
           trackCommand("platform-discord");
-          console.log(`  ${chalk.hex("#06B6D4")("●")} ${chalk.hex("#94A3B8")("Starting Discord bot...")}`);
+          console.log(chalk.hex("#06B6D4")("\n  🤖 Starting Discord bot...\n"));
           try {
             const { startDiscordBot } = await import("./platforms/discord.js");
             startDiscordBot(argv.token as string);
           } catch (e: any) {
-            console.log(`  ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(`Failed: ${e?.message || e}`)}`);
+            console.log(chalk.hex("#F43F5E")(`\n  ❌ Failed to start Discord bot: ${e?.message || e}\n`));
           }
         })
         .command("telegram <token>", "Start Telegram bot", () => {}, async (argv) => {
           showBanner();
           trackCommand("platform-telegram");
-          console.log(`  ${chalk.hex("#06B6D4")("●")} ${chalk.hex("#94A3B8")("Starting Telegram bot...")}`);
+          console.log(chalk.hex("#06B6D4")("\n  🤖 Starting Telegram bot...\n"));
           try {
             const { startTelegramBot } = await import("./platforms/telegram.js");
             startTelegramBot(argv.token as string);
           } catch (e: any) {
-            console.log(`  ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(`Failed: ${e?.message || e}`)}`);
+            console.log(chalk.hex("#F43F5E")(`\n  ❌ Failed to start Telegram bot: ${e?.message || e}\n`));
           }
         })
         .command("whatsapp", "Start WhatsApp bot", () => {}, async () => {
           showBanner();
           trackCommand("platform-whatsapp");
-          console.log(`  ${chalk.hex("#06B6D4")("●")} ${chalk.hex("#94A3B8")("Starting WhatsApp bot...")}`);
+          console.log(chalk.hex("#06B6D4")("\n  🤖 Starting WhatsApp bot (QR login)...\n"));
           try {
             const { startWhatsAppBot } = await import("./platforms/whatsapp.js");
             startWhatsAppBot();
           } catch (e: any) {
-            console.log(`  ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(`Failed: ${e?.message || e}`)}`);
+            console.log(chalk.hex("#F43F5E")(`\n  ❌ Failed to start WhatsApp bot: ${e?.message || e}\n`));
           }
         })
         .demandCommand(1, "Specify a platform")
@@ -333,27 +334,27 @@ function main() {
         .command("$0", "List all templates", () => {}, () => {
           showBanner();
           const templates = getTemplates();
-          console.log(`  ${chalk.hex("#8B5CF6").bold("Agent Templates")}`);
+          console.log(chalk.hex("#8B5CF6").bold("\n  Agent Templates:\n"));
           for (const t of templates) {
-            console.log(`    ${chalk.hex("#F8FAFC").bold(t.name)}`);
-            console.log(`      ${chalk.hex("#64748B")(t.description)}`);
-            console.log(`      ${chalk.hex("#4B5563")(`id: ${t.id}  category: ${t.category}`)}`);
+            console.log(`  ${t.icon} ${chalk.hex("#F8FAFC").bold(t.name)}`);
+            console.log(`    ${chalk.hex("#94A3B8")(t.description)}`);
+            console.log(`    ${chalk.hex("#64748B")(`ID: ${t.id} | ${t.category}`)}`);
+            console.log();
           }
-          console.log();
         })
         .command("search <query>", "Search templates", () => {}, (argv) => {
           showBanner();
           const results = searchTemplates(argv.query as string);
           if (results.length === 0) {
-            console.log(`  ${chalk.hex("#64748B")("No templates found")}`);
+            console.log(chalk.hex("#64748B")("  No templates found"));
             return;
           }
-          console.log(`  ${chalk.hex("#8B5CF6").bold(`Templates matching "${argv.query}"`)}`);
+          console.log(chalk.hex("#8B5CF6").bold(`\n  Templates matching "${argv.query}":\n`));
           for (const t of results) {
-            console.log(`    ${chalk.hex("#F8FAFC").bold(t.name)}`);
-            console.log(`      ${chalk.hex("#4B5563")(`id: ${t.id}  category: ${t.category}`)}`);
+            console.log(`  ${t.icon} ${chalk.hex("#F8FAFC").bold(t.name)}`);
+            console.log(`    ${chalk.hex("#64748B")(`ID: ${t.id} | ${t.category}`)}`);
+            console.log();
           }
-          console.log();
         })
         .command("apply <id> <name>", "Create agent from template", () => {}, (argv) => {
           showBanner();
@@ -395,22 +396,21 @@ function main() {
       trackCommand("doctor");
       const result = doctor();
       if (result.healthy) {
-        console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#94A3B8")("All systems healthy")}`);
+        console.log(chalk.hex("#10B981")("\n  ✅ All systems healthy\n"));
       } else {
-        console.log(`  ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(`Found ${result.issues.length} issue(s)`)}`);
+        console.log(chalk.hex("#F43F5E")(`\n  ❌ Found ${result.issues.length} issue(s):\n`));
         for (const issue of result.issues) {
-          console.log(`    ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(issue)}`);
+          console.log(`  ${chalk.hex("#F43F5E")("•")} ${chalk.hex("#94A3B8")(issue)}`);
         }
+        console.log();
       }
-      console.log();
     })
     .command("clean", "Clean cache", () => {}, () => {
       showBanner();
       trackCommand("clean");
       const bytes = cleanCache();
       const mb = (bytes / 1024 / 1024).toFixed(2);
-      console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#94A3B8")(`Cleaned ${mb} MB`)}`);
-      console.log();
+      console.log(chalk.hex("#10B981")(`\n  ✅ Cleaned ${mb} MB\n`));
     })
     .command("help", "Show help", () => {}, () => {
       showBanner();
@@ -422,15 +422,15 @@ function main() {
 }
 
 async function interactiveMode() {
-  console.log(`  ${chalk.hex("#64748B")(`${getLang() === "ar" ? 'اكتب "خروج" للخروج' : 'Type "exit" to quit'}`)}`);
+  console.log(chalk.hex("#64748B")(`  ${t().prompt}`));
+  console.log(chalk.hex("#64748B")(`  ${getLang() === "ar" ? "اكتب خروج للخروج" : 'Type "exit" to quit'}`));
   console.log();
 
   while (true) {
-    const input = await askQuestion(chalk.hex("#8B5CF6")("›"));
+    const input = await askQuestion("oh>");
     if (!input) continue;
     if (input.toLowerCase() === "exit" || input === "خروج") {
-      console.log(`  ${chalk.hex("#8B5CF6")("●")} ${chalk.hex("#94A3B8")(t().goodbye)}`);
-      console.log();
+      console.log(chalk.hex("#8B5CF6")(`\n  ${t().goodbye} 👋\n`));
       break;
     }
     if (input.toLowerCase() === "help" || input === "مساعدة") {
@@ -447,59 +447,59 @@ async function interactiveMode() {
     }
     if (input.toLowerCase() === "models" || input === "نماذج") {
       const ll = getLang();
-      console.log(`  ${chalk.hex("#8B5CF6").bold(`${ll === "ar" ? "النماذج" : "Models"}`)}  ${chalk.hex("#64748B")(`${MODELS.length} total, ${MODELS.filter(m => m.free).length} free`)}`);
+      console.log(chalk.hex("#8B5CF6").bold(`\n  🧠 ${ll === "ar" ? "النماذج المتاحة" : "Available Models"} (${MODELS.length}, ${MODELS.filter(m => m.free).length} ${ll === "ar" ? "مجاني" : "free"})\n`));
       for (const m of MODELS) {
         const isCurrent = m.id === getConfig().model;
-        const marker = isCurrent ? chalk.hex("#10B981")("●") : chalk.hex("#4B5563")("○");
+        const marker = isCurrent ? chalk.hex("#10B981")("◉") : chalk.hex("#64748B")("○");
         const name = isCurrent ? chalk.hex("#10B981").bold(m.name) : chalk.hex("#F8FAFC")(m.name);
-        console.log(`  ${marker} ${name}${m.free ? chalk.hex("#10B981")(" free") : ""}`);
-        console.log(`      ${chalk.hex("#4B5563")(m.description.slice(0, 80))}`);
+        const flag = m.category === "chinese" ? "🇨🇳" : m.category === "american" ? "🇺🇸" : "🔷";
+        console.log(`  ${marker} ${flag} ${name}${m.free ? chalk.hex("#10B981")(" FREE") : ""}`);
+        console.log(`    ${chalk.hex("#6B7280")(m.description.slice(0, 80))}`);
       }
-      console.log(`  ${chalk.hex("#64748B")(`Switch: model <id>`)}`);
+      console.log(`  ${chalk.hex("#64748B")(ll === "ar" ? "💡 غيّر: model <id>" : "💡 Switch: model <id>")}`);
       console.log();
       continue;
     }
     if (input.toLowerCase() === "model" || input === "موديل") {
       const currentId = getConfig().model;
       const current = getModelById(currentId);
+      const ll = getLang();
       if (current) {
-        console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#F8FAFC").bold(current.name)}`);
-        console.log(`    ${chalk.hex("#64748B")(`${current.provider}  ${current.params || ""}${current.context ? `  ${(current.context / 1000).toFixed(0)}K` : ""}`)}`);
+        console.log(chalk.hex("#10B981")(`\n  🧠 ${ll === "ar" ? "النموذج الحالي:" : "Current model:"} ${chalk.bold(current.name)}`));
+        console.log(`  ${chalk.hex("#94A3B8")(`${current.provider} | ${current.params || ""} | ${current.context ? `${(current.context / 1000).toFixed(0)}K` : ""}`)}`);
         console.log();
       }
       continue;
     }
     if (input.toLowerCase().startsWith("model ") || input.startsWith("موديل ")) {
       const name = input.startsWith("موديل ") ? input.slice(5).trim() : input.slice(6).trim();
+      const ll = getLang();
       const found = getModelById(name);
       if (found) {
         setConfig("model", found.id);
-        console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#F8FAFC")(found.name)}`);
-        console.log();
+        console.log(chalk.hex("#10B981")(`\n  ✅ ${ll === "ar" ? `تم التبديل إلى ${found.name}` : `Switched to ${found.name}`}\n`));
       } else {
-        console.log(`  ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#64748B")("Model not found")}`);
-        console.log();
+        console.log(chalk.hex("#F43F5E")(`\n  ❌ ${ll === "ar" ? "موديل غير موجود" : "Model not found"}\n`));
       }
       continue;
     }
     if (input.toLowerCase() === "doctor") {
       const result = doctor();
       if (result.healthy) {
-        console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#94A3B8")("All systems healthy")}`);
+        console.log(chalk.hex("#10B981")("\n  ✅ All systems healthy\n"));
       } else {
-        console.log(`  ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(`Found ${result.issues.length} issue(s)`)}`);
+        console.log(chalk.hex("#F43F5E")(`\n  ❌ Found ${result.issues.length} issue(s):\n`));
         for (const issue of result.issues) {
-          console.log(`    ${chalk.hex("#F43F5E")("●")} ${chalk.hex("#94A3B8")(issue)}`);
+          console.log(`  ${chalk.hex("#F43F5E")("•")} ${chalk.hex("#94A3B8")(issue)}`);
         }
+        console.log();
       }
-      console.log();
       continue;
     }
     if (input.toLowerCase() === "clean") {
       const bytes = cleanCache();
       const mb = (bytes / 1024 / 1024).toFixed(2);
-      console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#94A3B8")(`Cleaned ${mb} MB`)}`);
-      console.log();
+      console.log(chalk.hex("#10B981")(`\n  ✅ Cleaned ${mb} MB\n`));
       continue;
     }
     if (input.toLowerCase().startsWith("search ")) {
@@ -517,7 +517,7 @@ async function interactiveMode() {
       switch (dda.action) {
         case "run": {
           const name = dda.target || "default";
-          console.log(`  ${chalk.hex("#06B6D4")("●")} ${chalk.hex("#94A3B8")(`${ll === "ar" ? "تشغيل" : "Running"}: ${name}`)}`);
+          console.log(chalk.hex("#06B6D4")(`\n  🤖 ${ll === "ar" ? `تشغيل: ${name}` : `Running: ${name}`}\n`));
           runAgent(name);
           break;
         }
@@ -532,17 +532,16 @@ async function interactiveMode() {
             const found = getModelById(target) || getModelById(`deepseek/${target}`) || getModelById(`meta-llama/${target}`);
             if (found) {
               setConfig("model", found.id);
-              console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#F8FAFC")(found.name)}`);
+              console.log(chalk.hex("#10B981")(`\n  ✅ ${ll === "ar" ? `تم التبديل إلى ${found.name}` : `Switched to ${found.name}`}\n`));
             } else {
-              console.log(`  ${chalk.hex("#FBBF24")("●")} ${chalk.hex("#64748B")(`Model "${target}" not found`)}`);
+              console.log(chalk.hex("#FBBF24")(`\n  ⚠ ${ll === "ar" ? `ما لقيت موديل "${target}"، جرب: models` : `Model "${target}" not found, try: models`}\n`));
             }
           } else {
             const current = getModelById(getConfig().model);
             if (current) {
-              console.log(`  ${chalk.hex("#10B981")("●")} ${chalk.hex("#F8FAFC").bold(current.name)}`);
+              console.log(chalk.hex("#10B981")(`\n  🧠 ${ll === "ar" ? "النموذج الحالي:" : "Current model:"} ${chalk.bold(current.name)}\n`));
             }
           }
-          console.log();
           break;
         }
         case "delete": {
@@ -550,8 +549,7 @@ async function interactiveMode() {
           if (name) {
             deleteAgent(name);
           } else {
-            console.log(`  ${chalk.hex("#FBBF24")("●")} ${chalk.hex("#64748B")("Specify agent name: delete da [name]")}`);
-            console.log();
+            console.log(chalk.hex("#FBBF24")(`\n  ⚠ ${ll === "ar" ? "حدد اسم الوكيل: احذف دا [الاسم]" : "Specify agent name: delete da [name]"}\n`));
           }
           break;
         }
@@ -562,23 +560,23 @@ async function interactiveMode() {
         case "create": {
           const name = dda.target || "my-agent";
           const desc = "Created via DDA command";
-          console.log(`  ${chalk.hex("#06B6D4")("●")} ${chalk.hex("#94A3B8")(`Creating agent: ${name}`)}`);
+          console.log(chalk.hex("#06B6D4")(`\n  🤖 ${ll === "ar" ? `إنشاء وكيل: ${name}` : `Creating agent: ${name}`}\n`));
           createAgent(name, desc);
           break;
         }
         case "templates": {
           const templates = getTemplates();
-          console.log(`  ${chalk.hex("#8B5CF6").bold(`${ll === "ar" ? "القوالب" : "Templates"}`)}`);
+          console.log(chalk.hex("#8B5CF6").bold(`\n  ${ll === "ar" ? "القوالب المتاحة" : "Available Templates"}\n`));
           for (const t of templates) {
-            console.log(`    ${chalk.hex("#F8FAFC").bold(t.name)}`);
-            console.log(`      ${chalk.hex("#4B5563")(`id: ${t.id}  category: ${t.category}`)}`);
+            console.log(`  ${t.icon} ${chalk.hex("#F8FAFC").bold(t.name)}`);
+            console.log(`    ${chalk.hex("#64748B")(`ID: ${t.id} | ${t.category}`)}`);
           }
           console.log();
           break;
         }
         case "help":
         default: {
-          console.log(`  ${chalk.hex("#8B5CF6").bold(`${ll === "ar" ? DDA_HELP_TEXT_AR : DDA_HELP_TEXT_EN}`)}`);
+          console.log(chalk.hex("#8B5CF6").bold(`\n  ${ll === "ar" ? DDA_HELP_TEXT_AR : DDA_HELP_TEXT_EN}\n`));
           break;
         }
       }

@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { getLang } from "../i18n/index.js";
+import { t, getLang } from "../i18n/index.js";
 
 interface HelpSection {
   title: string;
@@ -74,14 +74,12 @@ const sections: HelpSection[] = [
 
 export function showHelp(): void {
   const lang = getLang();
-  console.log(chalk.hex("#8B5CF6").bold(`${lang === "ar" ? "الأوامر المتاحة" : "Available Commands"}`));
-  console.log();
+  console.log(chalk.hex("#8B5CF6").bold(`\n  ${lang === "ar" ? "الأوامر المتاحة" : "Available Commands"}\n`));
   for (const section of sections) {
-    console.log(`  ${chalk.hex("#06B6D4").bold(section.title)}`);
+    console.log(chalk.hex("#06B6D4").bold(`  ┌─ ${section.title}`));
     for (const cmd of section.commands) {
-      const padded = cmd.cmd.padEnd(32);
-      console.log(`    ${chalk.hex("#F8FAFC")(padded)} ${chalk.hex("#64748B")(cmd.desc)}`);
+      console.log(`  │ ${chalk.hex("#F8FAFC")(cmd.cmd.padEnd(30))} ${chalk.hex("#94A3B8")(cmd.desc)}`);
     }
-    console.log();
+    console.log(`  └${"─".repeat(50)}\n`);
   }
 }
