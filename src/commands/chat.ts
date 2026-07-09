@@ -4,6 +4,8 @@ import { memoryStore, memorySearch } from "../memory/index.js";
 import { auditLog } from "../security/index.js";
 import { trackChat, trackCommand } from "./stats.js";
 import { detectIntent, isArabic, extractAgentName } from "./arabic.js";
+import { proxyRequest } from "../proxy/index.js";
+import { getConfig } from "../config/index.js";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -38,31 +40,7 @@ function buildContext(sessionId: string, message: string): string {
   return parts.length > 0 ? `\n  ${parts.join("\n  ")}` : "";
 }
 
-function querySummary(message: string): string | null {
-  const lower = message.toLowerCase();
-
-  if (lower.includes("summarize") || lower.includes("لخص") || lower.includes("تلخيص")) {
-    return getLang() === "ar"
-      ? "بسألك عن شنو بالضبط تبي تلخص؟"
-      : "What would you like me to summarize?";
-  }
-
-  if (lower.includes("translate") || lower.includes("ترجم") || lower.includes("ترجمة")) {
-    return getLang() === "ar"
-      ? "أرسل لي النص اللي تبي أترجمه"
-      : "Send me the text you want translated";
-  }
-
-  if (lower.includes("code") || lower.includes("كود") || lower.includes("برمجة")) {
-    return getLang() === "ar"
-      ? `أقدر أساعدك في كتابة كود. وش تبي تسوي؟`
-      : "I can help you write code. What language?";
-  }
-
-  return null;
-}
-
-export function chat(message: string, sessionId = "default"): void {
+export async function chat(message: string, sessionId = "default"): Promise<void> {
   const history = getOrCreateSession(sessionId);
 
   history.push({ role: "user", content: message, timestamp: Date.now() });
@@ -84,7 +62,6 @@ export function chat(message: string, sessionId = "default"): void {
     history.push({ role: "assistant", content: response, timestamp: Date.now() });
     const ctx = buildContext(sessionId, message);
     console.log(`\n  ${chalk.hex("#8B5CF6").bold("OH:")} ${chalk.hex("#F8FAFC")(response)}${ctx}`);
-    console.log();
     return;
   }
 
@@ -95,7 +72,6 @@ export function chat(message: string, sessionId = "default"): void {
       const response = lang === "ar" ? "ما لقيت شي بهذا الخصوص." : "No results found.";
       history.push({ role: "assistant", content: response, timestamp: Date.now() });
       console.log(`\n  ${chalk.hex("#8B5CF6").bold("OH:")} ${chalk.hex("#F8FAFC")(response)}`);
-      console.log();
       return;
     }
     const response = lang === "ar" ? "لقيت هالنتايج:" : "Here's what I found:";
@@ -104,48 +80,24 @@ export function chat(message: string, sessionId = "default"): void {
     for (const r of results.slice(0, 5)) {
       console.log(`    ${chalk.hex("#06B6D4")("•")} ${chalk.hex("#F8FAFC")(r.key)}: ${chalk.hex("#94A3B8")(r.value.slice(0, 80))}`);
     }
-    console.log();
     return;
   }
 
-  if (intent.action === "help") {
-    trackCommand("help");
-    const response = lang === "ar"
-      ? "أقدر أساعدك في: إنشاء وكلاء (create)، بحث (search)، ترجمة (translate)، تلخيص (summarize)، وكتابة كود (code). جرب تكتب أمر!"
-      : "I can help with: create agents, search memory, translate, summarize, and code generation. Try a command!";
+  const modelId = getConfig().model;
+  console.log(`\n  ${chalk.hex("#8B5CF6").bold("OH:")} ${chalk.hex("#64748B")(lang === "ar" ? "بفكر..." : "Thinking...")}`);
+
+  try {
+    const response = await proxyRequest(modelId, message);
     history.push({ role: "assistant", content: response, timestamp: Date.now() });
     const ctx = buildContext(sessionId, message);
     console.log(`\n  ${chalk.hex("#8B5CF6").bold("OH:")} ${chalk.hex("#F8FAFC")(response)}${ctx}`);
-    console.log();
-    return;
+  } catch (err: any) {
+    const fallback = lang === "ar"
+      ? "عفواً، صار خطأ. تأكد من الإعدادات أو جرب مرة ثانية."
+      : "Sorry, something went wrong. Check your config or try again.";
+    history.push({ role: "assistant", content: fallback, timestamp: Date.now() });
+    console.log(`\n  ${chalk.hex("#F43F5E").bold("OH:")} ${chalk.hex("#F8FAFC")(fallback)}`);
   }
-
-  const summaryResponse = querySummary(message);
-  if (summaryResponse) {
-    trackCommand("chat");
-    history.push({ role: "assistant", content: summaryResponse, timestamp: Date.now() });
-    const ctx = buildContext(sessionId, message);
-    console.log(`\n  ${chalk.hex("#8B5CF6").bold("OH:")} ${chalk.hex("#F8FAFC")(summaryResponse)}${ctx}`);
-    console.log();
-    return;
-  }
-
-  const greeting = arabic || lang === "ar"
-    ? "مرحبًا! كيف أقدر أساعدك اليوم؟"
-    : "Hello! How can I help you today?";
-
-  const response = history.length <= 2
-    ? greeting
-    : lang === "ar"
-      ? `فكرة ممتازة! قلت: "${message.slice(0, 100)}". خلينا نشتغل عليها.`
-      : `Great! You said: "${message.slice(0, 100)}". Let's work on it.`;
-
-  history.push({ role: "assistant", content: response, timestamp: Date.now() });
-
-  trackCommand("chat");
-  const ctx = buildContext(sessionId, message);
-  console.log(`\n  ${chalk.hex("#8B5CF6").bold("OH:")} ${chalk.hex("#F8FAFC")(response)}${ctx}`);
-  console.log();
 }
 
 export function clearHistory(sessionId = "default"): void {

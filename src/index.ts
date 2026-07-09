@@ -46,12 +46,12 @@ function main() {
     )
     .command("chat [message]", "Chat with OH", (y) =>
       y.positional("message", { type: "string", demandOption: false })
-    , (argv) => {
+    , async (argv) => {
       showBanner();
       if (argv.message) {
-        chat(argv.message);
+        await chat(argv.message);
       } else {
-        interactiveMode();
+        await interactiveMode();
       }
     })
     .command("create <name> [description]", "Create an agent", (y) => {
@@ -584,7 +584,7 @@ async function interactiveMode() {
     }
 
     auditLog("INTERACTIVE", input.slice(0, 200));
-    chat(input);
+    await chat(input);
   }
 }
 
