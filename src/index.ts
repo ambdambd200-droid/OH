@@ -25,6 +25,7 @@ import { showProfile, showLeaderboard, addCommand } from "./game/index.js";
 import { getStatsSummary, trackCommand } from "./commands/stats.js";
 import { cmdSearch } from "./commands/search.js";
 import { systemInfo, checkUpdate, cleanCache, exportAll, doctor } from "./commands/system.js";
+import { isDDACommand, parseDDACommand, DDA_HELP_TEXT_AR, DDA_HELP_TEXT_EN } from "./commands/dda.js";
 
 loadConfig();
 setLang(getConfig().lang);
@@ -506,6 +507,82 @@ async function interactiveMode() {
       cmdSearch(query);
       continue;
     }
+
+    // DDA command check (Egyptian dialect: ده/دا/دي)
+    if (isDDACommand(input)) {
+      const dda = parseDDACommand(input);
+      const ll = getLang();
+      auditLog("DDA", `${dda.action}: ${input.slice(0, 100)}`);
+
+      switch (dda.action) {
+        case "run": {
+          const name = dda.target || "default";
+          console.log(chalk.hex("#06B6D4")(`\n  🤖 ${ll === "ar" ? `تشغيل: ${name}` : `Running: ${name}`}\n`));
+          runAgent(name);
+          break;
+        }
+        case "search": {
+          const query = dda.target || input;
+          cmdSearch(query);
+          break;
+        }
+        case "model": {
+          const target = dda.target;
+          if (target) {
+            const found = getModelById(target) || getModelById(`deepseek/${target}`) || getModelById(`meta-llama/${target}`);
+            if (found) {
+              setConfig("model", found.id);
+              console.log(chalk.hex("#10B981")(`\n  ✅ ${ll === "ar" ? `تم التبديل إلى ${found.name}` : `Switched to ${found.name}`}\n`));
+            } else {
+              console.log(chalk.hex("#FBBF24")(`\n  ⚠ ${ll === "ar" ? `ما لقيت موديل "${target}"، جرب: models` : `Model "${target}" not found, try: models`}\n`));
+            }
+          } else {
+            const current = getModelById(getConfig().model);
+            if (current) {
+              console.log(chalk.hex("#10B981")(`\n  🧠 ${ll === "ar" ? "النموذج الحالي:" : "Current model:"} ${chalk.bold(current.name)}\n`));
+            }
+          }
+          break;
+        }
+        case "delete": {
+          const name = dda.target;
+          if (name) {
+            deleteAgent(name);
+          } else {
+            console.log(chalk.hex("#FBBF24")(`\n  ⚠ ${ll === "ar" ? "حدد اسم الوكيل: احذف دا [الاسم]" : "Specify agent name: delete da [name]"}\n`));
+          }
+          break;
+        }
+        case "list": {
+          listAgents();
+          break;
+        }
+        case "create": {
+          const name = dda.target || "my-agent";
+          const desc = "Created via DDA command";
+          console.log(chalk.hex("#06B6D4")(`\n  🤖 ${ll === "ar" ? `إنشاء وكيل: ${name}` : `Creating agent: ${name}`}\n`));
+          createAgent(name, desc);
+          break;
+        }
+        case "templates": {
+          const templates = getTemplates();
+          console.log(chalk.hex("#8B5CF6").bold(`\n  ${ll === "ar" ? "القوالب المتاحة" : "Available Templates"}\n`));
+          for (const t of templates) {
+            console.log(`  ${t.icon} ${chalk.hex("#F8FAFC").bold(t.name)}`);
+            console.log(`    ${chalk.hex("#64748B")(`ID: ${t.id} | ${t.category}`)}`);
+          }
+          console.log();
+          break;
+        }
+        case "help":
+        default: {
+          console.log(chalk.hex("#8B5CF6").bold(`\n  ${ll === "ar" ? DDA_HELP_TEXT_AR : DDA_HELP_TEXT_EN}\n`));
+          break;
+        }
+      }
+      continue;
+    }
+
     auditLog("INTERACTIVE", input.slice(0, 200));
     chat(input);
   }

@@ -263,6 +263,7 @@ h2 .highlight { background: linear-gradient(135deg, var(--primary), var(--accent
 <script>
 let ws = null;
 let lang = 'en';
+let langLocked = true; // 100% English by default, Arabic only on explicit command
 const translations = {
   en: {
     home: 'Home', chat: 'Chat', agents: 'Agents', memory: 'Memory',
@@ -323,10 +324,77 @@ function navigate(page) {
 }
 
 function setLanguage(l) {
+  if (l === 'ar') {
+    langLocked = false;
+  }
   lang = l;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`[data-lang="${l}"]`).classList.add('active');
+  applyUI();
   fetch('/api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({key:'lang', value:l}) });
+}
+
+function applyUI() {
+  const isAr = lang === 'ar';
+  document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+  document.documentElement.lang = lang;
+
+  // Sidebar
+  const sidebarItems = document.querySelectorAll('.sidebar-item');
+  const sidebarLabels = [t('home'), t('chat'), t('agents'), t('memory'), t('templates'), t('stats'), t('config')];
+  sidebarItems.forEach((el, i) => { if (sidebarLabels[i]) el.childNodes[1].textContent = sidebarLabels[i]; });
+
+  // Header
+  const headerTitle = document.querySelector('.header-logo');
+  if (headerTitle) headerTitle.textContent = isAr ? '✦ OH v2.0' : '✦ OH v2.0';
+
+  // Chat page
+  const chatTitle = document.querySelector('#page-chat h2');
+  if (chatTitle) chatTitle.innerHTML = isAr ? '<span class="highlight">محادثة</span> مع Claude Fable 5' : '<span class="highlight">Chat</span> with Claude Fable 5';
+
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) chatInput.placeholder = t('chatPlaceholder');
+
+  const sendBtn = document.querySelector('#page-chat button');
+  if (sendBtn) sendBtn.textContent = t('send');
+
+  // Agents page
+  const agentsTitle = document.querySelector('#page-agents h2');
+  if (agentsTitle) agentsTitle.innerHTML = isAr ? '<span class="highlight">الوكلاء</span>' : '<span class="highlight">Agents</span>';
+  const agentNameInput = document.getElementById('agent-name');
+  if (agentNameInput) agentNameInput.placeholder = isAr ? 'اسم الوكيل' : 'Agent name';
+  const agentDescInput = document.getElementById('agent-desc');
+  if (agentDescInput) agentDescInput.placeholder = isAr ? 'الوصف' : 'Description';
+  const createBtn = document.querySelector('#page-agents .btn-primary');
+  if (createBtn) createBtn.textContent = isAr ? '+ إنشاء' : '+ Create';
+
+  // Memory page
+  const memoryTitle = document.querySelector('#page-memory h2');
+  if (memoryTitle) memoryTitle.innerHTML = isAr ? '<span class="highlight">الذاكرة</span>' : '<span class="highlight">Memory</span> Browser';
+  const memSearch = document.getElementById('memory-search-input');
+  if (memSearch) memSearch.placeholder = t('searchMemory');
+  const memButtons = document.querySelectorAll('#page-memory .btn');
+  if (memButtons[0]) memButtons[0].textContent = t('searchMemory').split('...')[0] || 'Search';
+  if (memButtons[1]) memButtons[1].textContent = t('all');
+
+  // Templates page
+  const templatesTitle = document.querySelector('#page-templates h2');
+  if (templatesTitle) templatesTitle.innerHTML = isAr ? '<span class="highlight">القوالب</span>' : '<span class="highlight">Template</span> Gallery';
+
+  // Stats page
+  const statsTitle = document.querySelector('#page-stats h2');
+  if (statsTitle) statsTitle.innerHTML = isAr ? '<span class="highlight">الإحصائيات</span>' : '<span class="highlight">Usage</span> Statistics';
+
+  // Config page
+  const configTitle = document.querySelector('#page-config h2');
+  if (configTitle) configTitle.innerHTML = isAr ? '<span class="highlight">الإعدادات</span>' : '<span class="highlight">Settings</span>';
+
+  // Home page
+  const homeTitle = document.querySelector('#page-home h2');
+  if (homeTitle) homeTitle.innerHTML = isAr ? '<span class="highlight">لوحة التحكم</span>' : '<span class="highlight">Dashboard</span>';
+  const statLabels = document.querySelectorAll('.stat-card .label');
+  const statTexts = [t('system'), t('active'), t('memoryLabel'), t('uptimeLabel')];
+  statLabels.forEach((el, i) => { if (statTexts[i]) el.textContent = statTexts[i]; });
 }
 
 function formatUptime(s) {
@@ -481,13 +549,14 @@ async function loadStats() {
       fetch('/api/status').then(r => r.json()),
       fetch('/api/stats').then(r => r.json())
     ]);
+    const isAr = lang === 'ar';
     row.innerHTML = `
-      <div class="stat-item"><div class="num">🟢</div><div class="lbl">Status</div></div>
-      <div class="stat-item"><div class="num">${stats.memory || 0}</div><div class="lbl">Memory Entries</div></div>
-      <div class="stat-item"><div class="num">${stats.models || 0}</div><div class="lbl">Available Models</div></div>
-      <div class="stat-item"><div class="num">${formatUptime(stats.uptime || 0)}</div><div class="lbl">Uptime</div></div>
+      <div class="stat-item"><div class="num">🟢</div><div class="lbl">${isAr ? 'الحالة' : 'Status'}</div></div>
+      <div class="stat-item"><div class="num">${stats.memory || 0}</div><div class="lbl">${isAr ? 'مدخلات الذاكرة' : 'Memory Entries'}</div></div>
+      <div class="stat-item"><div class="num">${stats.models || 0}</div><div class="lbl">${isAr ? 'النماذج المتاحة' : 'Available Models'}</div></div>
+      <div class="stat-item"><div class="num">${formatUptime(stats.uptime || 0)}</div><div class="lbl">${isAr ? 'مدة التشغيل' : 'Uptime'}</div></div>
     `;
-  } catch { row.innerHTML = '<div class="stat-item"><div class="num">⚠</div><div class="lbl">Error loading stats</div></div>'; }
+  } catch { row.innerHTML = `<div class="stat-item"><div class="num">⚠</div><div class="lbl">${lang === 'ar' ? 'خطأ في التحميل' : 'Error loading stats'}</div></div>`; }
 }
 
 // Config
@@ -516,6 +585,8 @@ async function updateConfig(el) {
 
 // Init
 window.addEventListener('DOMContentLoaded', () => {
+  lang = 'en'; langLocked = true;
+  applyUI();
   const hash = window.location.hash.replace('#', '') || 'home';
   navigate(hash);
   loadDashboard();

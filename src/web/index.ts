@@ -10,6 +10,7 @@ import { memoryExport, memorySearch } from "../memory/index.js";
 import { chat } from "../commands/chat.js";
 import { listFreeModels, MODELS, getModelById } from "../proxy/index.js";
 import { auditLog } from "../security/index.js";
+import { isDDACommand, parseDDACommand } from "../commands/dda.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = existsSync(join(__dirname, "public"))
@@ -105,7 +106,31 @@ export function startWebServer(port = 3456) {
           const lower = data.message.toLowerCase();
           let response: string;
 
-          if (lower.includes("hello") || lower.includes("hi") || lower.includes("مرحبا") || lower.includes("اهلا")) {
+          if (isDDACommand(data.message)) {
+            const dda = parseDDACommand(data.message);
+            switch (dda.action) {
+              case "run":
+                response = lang === "ar"
+                  ? `🚀 تشغيل "${dda.target || 'الوكيل'}"... خلينا نشتغل!`
+                  : `🚀 Running "${dda.target || 'agent'}"... Let's go!`;
+                break;
+              case "search":
+                response = lang === "ar"
+                  ? `🔍 بحث: "${dda.target}". بدور في الذاكرة...`
+                  : `🔍 Searching for "${dda.target}" in memory...`;
+                break;
+              case "model":
+                response = lang === "ar"
+                  ? `🧠 تبديل الموديل إلى: "${dda.target || '؟'}"`
+                  : `🧠 Switching model to: "${dda.target || '?'}"`;
+                break;
+              default:
+                response = lang === "ar"
+                  ? `👋 أمر "ده/دا/دي" تم استقباله! اكتب "ساعدني" عشان تشوف الأوامر.`
+                  : `👋 DDA command received! Type "help" to see available commands.`;
+            }
+            auditLog("WEB_DDA", `${dda.action}: ${data.message.slice(0, 100)}`);
+          } else if (lower.includes("hello") || lower.includes("hi") || lower.includes("مرحبا") || lower.includes("اهلا")) {
             response = lang === "ar" ? "مرحبًا! كيف أقدر أساعدك اليوم؟" : "Hello! How can I help you today?";
           } else if (lower.includes("create") || lower.includes("build") || lower.includes("bot") || lower.includes("وكيل") || lower.includes("إنشاء")) {
             const words = data.message.split(" ");
