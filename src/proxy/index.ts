@@ -65,29 +65,42 @@ function getModelPersonality(modelId: string): { en: string; ar: string } {
   return { en: "Versatile AI model ready to help", ar: "نموذج ذكاء اصطناعي متعدد الاستخدامات" };
 }
 
-const cannedResponses: Array<{ pattern: RegExp; en: string; ar: string }> = [
-  { pattern: /\b(hi|hello|hey|مرحبا|اهلا|سلام)\b/i, en: "Hello! I'm OH, your AI agent platform. I can build agents, search memory, write code, and more. Try asking me to create something!", ar: "مرحباً! أنا OH، منصة الذكاء الاصطناعي الخاصة بك. أقدر أصنع وكلاء، أبحث في الذاكرة، أكتب كود، وأكثر. جرب تطلب مني أصنع شي!" },
-  { pattern: /\b(how are you|كيفك|كيف حالك|عامل ايه)\b/i, en: "I'm running smoothly! Ready to help you build and deploy. What can I do for you today?", ar: "أنا تمام! جاهز أساعدك تبني وتنشر. وش تباني أسوي لك؟" },
-  { pattern: /\b(who are you|what are you|شنو انت|من انت|what can you do)\b/i, en: "I'm OH (Open Hermes) v2.0 — a no-code AI agent platform with 42 models, 25+ built-in systems, Arabic-first CLI, and a real-time web dashboard. I can create agents, search memory, generate code, translate, summarize, and much more!", ar: "أنا OH (Open Hermes) v2.0 — منصة وكلاء ذكاء اصطناعي بدون كود. عندي 42 موديل، 25+ نظام مدمج، ودعم كامل للعربية. أقدر أصنع وكلاء، أبحث في الذاكرة، أكتب كود، أترجم، وألخص!" },
-  { pattern: /\b(code|كود|برمجة|python|javascript|typescript|function)\b/i, en: "I can help you write code in Python, JavaScript, TypeScript, and more. What would you like to build?", ar: "أقدر أساعدك تكتب كود بـ Python, JavaScript, TypeScript, وغيرها. وش تبني؟" },
-  { pattern: /\b(translate|ترجم|ترجمة)\b/i, en: "I can translate between English and Arabic. Send me the text you want translated!", ar: "أقدر أترجم بين العربية والإنجليزية. أرسل النص اللي تبي أترجمه!" },
-  { pattern: /\b(create|build|make|construct|أنشئ|صنع|ابني)\b/i, en: "I can create custom AI agents for you. Just tell me what kind of agent you need and what it should do!", ar: "أقدر أصنع لك وكيل ذكاء اصطناعي حسب طلبك. قلي شنو نوع الوكيل اللي تبي ووش يسوي!" },
-  { pattern: /\b(model|موديل|model|gpt|deepseek|llama|claude)\b/i, en: "We have 42 models: Chinese models (DeepSeek, Qwen, GLM, Yi, Baichuan, InternLM, Minimax) and American models (GPT-4, Claude, Gemini, Llama, Mistral, Grok). Use `oh models` to browse or `oh model <id>` to switch.", ar: "عندنا 42 موديل: نماذج صينية (DeepSeek, Qwen, GLM, Yi, Baichuan, InternLM, Minimax) وأمريكية (GPT-4, Claude, Gemini, Llama, Mistral, Grok). استخدم `models` للعرض أو `model <id>` للتبديل." },
-  { pattern: /\b(help|مساعدة|ساعدني|الأوامر|commands)\b/i, en: "Try these commands: `help` for help, `models` to list models, `model <id>` to switch, `status` for system status, `search <q>` to search memory, or just type anything to chat!", ar: "جرب هالأوامر: `مساعدة` للمساعدة، `نماذج` لعرض الموديلات، `موديل <id>` للتبديل، `status` لحالة النظام، `search <q>` للبحث، أو اكتب أي شيء للدردشة!" },
-  { pattern: /\b(شكرا|thanks|thank you|thx)\b/i, en: "You're welcome! Happy to help. Let me know what you need next.", ar: "العفو! دايماً حاضر. قلي وش تبي بعد." },
+interface CannedResponse {
+  triggers: string[];
+  en: string;
+  ar: string;
+}
+
+const cannedResponses: CannedResponse[] = [
+  { triggers: ["hi", "hello", "hey", "مرحبا", "اهلا", "سلام", "السلام", "مساء", "صباح"], en: "Hello! I'm OH, your AI agent platform. I can build agents, search memory, write code, and more. Try asking me to create something!", ar: "مرحباً! أنا OH، منصة الذكاء الاصطناعي الخاصة بك. أقدر أصنع وكلاء، أبحث في الذاكرة، أكتب كود، وأكثر. جرب تطلب مني أصنع شي!" },
+  { triggers: ["how are you", "كيفك", "كيف حالك", "عامل ايه", "عامل إيه", "اخبارك", "أخبارك"], en: "I'm running smoothly! Ready to help you build and deploy. What can I do for you today?", ar: "أنا تمام! جاهز أساعدك تبني وتنشر. وش تباني أسوي لك؟" },
+  { triggers: ["who are you", "what are you", "شنو انت", "شنو أنت", "من انت", "من أنت", "what can you do", "إيش تسوي", "وش تسوي", "ايش تسوي"], en: "I'm OH (Open Hermes) v2.0 — a no-code AI agent platform with 42 models, 25+ built-in systems, Arabic-first CLI, and a real-time web dashboard. I can create agents, search memory, generate code, translate, summarize, and much more!", ar: "أنا OH (Open Hermes) v2.0 — منصة وكلاء ذكاء اصطناعي بدون كود. عندي 42 موديل، 25+ نظام مدمج، ودعم كامل للعربية. أقدر أصنع وكلاء، أبحث في الذاكرة، أكتب كود، أترجم، وألخص!" },
+  { triggers: ["code", "كود", "برمجة", "python", "javascript", "typescript", "function", "js", "ts"], en: "I can help you write code in Python, JavaScript, TypeScript, and more. What would you like to build?", ar: "أقدر أساعدك تكتب كود بـ Python, JavaScript, TypeScript, وغيرها. وش تبني؟" },
+  { triggers: ["translate", "ترجم", "ترجمة", "translation"], en: "I can translate between English and Arabic. Send me the text you want translated!", ar: "أقدر أترجم بين العربية والإنجليزية. أرسل النص اللي تبي أترجمه!" },
+  { triggers: ["create", "build", "make", "construct", "أنشئ", "انشئ", "إنشاء", "انشاء", "صنع", "ابني", "إبني"], en: "I can create custom AI agents for you. Just tell me what kind of agent you need and what it should do!", ar: "أقدر أصنع لك وكيل ذكاء اصطناعي حسب طلبك. قلي شنو نوع الوكيل اللي تبي ووش يسوي!" },
+  { triggers: ["model", "موديل", "gpt", "deepseek", "llama", "claude", "models", "نماذج", "نموذج"], en: "We have 42 models: Chinese models (DeepSeek, Qwen, GLM, Yi, Baichuan, InternLM, Minimax) and American models (GPT-4, Claude, Gemini, Llama, Mistral, Grok). Use `oh models` to browse or `oh model <id>` to switch.", ar: "عندنا 42 موديل: نماذج صينية (DeepSeek, Qwen, GLM, Yi, Baichuan, InternLM, Minimax) وأمريكية (GPT-4, Claude, Gemini, Llama, Mistral, Grok). استخدم `models` للعرض أو `model <id>` للتبديل." },
+  { triggers: ["help", "مساعدة", "ساعدني", "ساعد", "الأوامر", "الاوامر", "commands"], en: "Try these commands: `help` for help, `models` to list models, `model <id>` to switch, `status` for system status, `search <q>` to search memory, or just type anything to chat!", ar: "جرب هالأوامر: `مساعدة` للمساعدة، `نماذج` لعرض الموديلات، `موديل <id>` للتبديل، `status` لحالة النظام، `search <q>` للبحث، أو اكتب أي شيء للدردشة!" },
+  { triggers: ["شكرا", "شكراً", "thanks", "thank you", "thx", "thank"], en: "You're welcome! Happy to help. Let me know what you need next.", ar: "العفو! دايماً حاضر. قلي وش تبي بعد." },
 ];
+
+function matchCanned(prompt: string): CannedResponse | null {
+  const lower = prompt.toLowerCase();
+  for (const cr of cannedResponses) {
+    for (const trigger of cr.triggers) {
+      if (lower.includes(trigger)) return cr;
+    }
+  }
+  return null;
+}
 
 function buildSimulatedResponse(model: string, prompt: string): string {
   const spec = getModelById(model);
   const vibe = getModelPersonality(model);
   const isArabic = /[\u0600-\u06FF]/.test(prompt);
   const name = spec?.name || model;
+  const matched = matchCanned(prompt);
 
-  for (const cr of cannedResponses) {
-    if (cr.pattern.test(prompt)) {
-      return isArabic ? cr.ar : cr.en;
-    }
-  }
+  if (matched) return isArabic ? matched.ar : matched.en;
 
   const defaultEn = `I'm running on ${name}. ${vibe.en}. How can I help you today?`;
   const defaultAr = `أنا شغال على ${name}. ${vibe.ar}. كيف أقدر أساعدك؟`;
