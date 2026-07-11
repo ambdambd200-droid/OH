@@ -26,10 +26,33 @@ const DDA_PATTERNS: { regex: RegExp; action: DDACommand["action"]; priority: num
   { regex: /(?:تغيير|غير|ظبط|ضبط|config|اعدادات|إعدادات)\s*(?:دا|ده|دي)?\s*(.*)/i, action: "config", priority: 7 },
 ];
 
-const DDA_DEMONSTRATIVES = /(?:دا|ده|دي|دول|كدا)/i;
+// These match individual boundary characters (not positions), so NO ^ or $ anchors
+const WORD_BOUNDARY = /[\s\u2000-\u206F\u2E00-\u2E7F'!"#$%&()*+,\-.\/:;<=>?@[\]^_`{|}~]/;
+const NON_WORD = /[\s\u2000-\u206F\u2E00-\u2E7F'!"#$%&()*+,\-.\/:;<=>?@[\]^_`{|}~]/;
+
+function isStandaloneWord(text: string, word: string): boolean {
+  let idx = 0;
+  while (true) {
+    idx = text.indexOf(word, idx);
+    if (idx === -1) return false;
+    const beforeOk = idx === 0 ? true : WORD_BOUNDARY.test(text[idx - 1]);
+    const afterOk = idx + word.length >= text.length ? true : NON_WORD.test(text[idx + word.length]);
+    if (beforeOk && afterOk) return true;
+    idx++;
+  }
+}
+
+const DDA_DEMONSTRATIVES_LIST = ["دا", "ده", "دي", "دول", "كدا"];
 
 export function isDDACommand(text: string): boolean {
-  return DDA_DEMONSTRATIVES.test(text) || /(?:شغل|ابحث|دور|احذف|اعرض|وريني)/i.test(text);
+  for (const d of DDA_DEMONSTRATIVES_LIST) {
+    if (isStandaloneWord(text, d)) return true;
+  }
+  const cmdWords = ["شغل", "ابحث", "احذف", "اعرض", "وريني", "run", "search", "delete", "list", "show"];
+  for (const w of cmdWords) {
+    if (isStandaloneWord(text.toLowerCase(), w)) return true;
+  }
+  return false;
 }
 
 export function parseDDACommand(text: string): DDACommand {
@@ -69,7 +92,7 @@ function extractDDATarget(text: string, action: DDACommand["action"]): string | 
   const actionKeys = actionWords[action] || [];
   for (let i = 0; i < words.length; i++) {
     if (actionKeys.includes(words[i].toLowerCase())) {
-      const rest = words.slice(i + 1).filter(w => !DDA_DEMONSTRATIVES.test(w)).join(" ");
+      const rest = words.slice(i + 1).filter(w => !DDA_DEMONSTRATIVES_LIST.some(d => w.includes(d))).join(" ");
       if (rest) return rest;
     }
   }
