@@ -108,7 +108,7 @@ function buildSimulatedResponse(model: string, prompt: string): string {
 }
 
 export async function proxyRequest(model: string, prompt: string): Promise<string> {
-  const cacheKey = `${model}:${prompt.length}`;
+  const cacheKey = `${model}:${prompt}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.result;
